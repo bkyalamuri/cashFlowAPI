@@ -1,0 +1,22 @@
+[
+  {"amount_cents": 125000, "currency": "USD", "direction": "inbound", "counterparty": "Stripe Payout", "description": "Weekly payout - Jan 6", "status": "completed", "created_at": "2025-01-06T14:00:00Z", "external_id": "po_jan06"},
+  {"amount_cents": -4500, "currency": "USD", "direction": "outbound", "counterparty": "AWS", "description": "Infrastructure - December", "status": "completed", "created_at": "2025-01-05T09:00:00Z", "external_id": "inv_aws_jan"},
+  {"amount_cents": 89200, "currency": "USD", "direction": "inbound", "counterparty": "Acme Corp", "description": "Invoice #1042", "status": "completed", "created_at": "2025-01-04T11:30:00Z", "external_id": "inv_1042"},
+  {"amount_cents": -12000, "currency": "USD", "direction": "outbound", "counterparty": "Vendor A", "description": "API usage - December", "status": "completed", "created_at": "2025-01-03T16:00:00Z", "external_id": "bill_va_jan"},
+  {"amount_cents": -8900, "currency": "USD", "direction": "outbound", "counterparty": "Payroll", "description": "Contractor payment", "status": "completed", "created_at": "2025-01-02T08:00:00Z", "external_id": "pay_jan02"},
+  {"amount_cents": 210000, "currency": "USD", "direction": "inbound", "counterparty": "Stripe Payout", "description": "Weekly payout - Dec 30", "status": "completed", "created_at": "2025-12-30T14:00:00Z", "external_id": "po_dec30"},
+  {"amount_cents": -25000, "currency": "USD", "direction": "outbound", "counterparty": "Vendor B", "description": "Q4 platform fee", "status": "completed", "created_at": "2025-12-28T10:00:00Z", "external_id": "bill_vb_q4"},
+  {"amount_cents": 45000, "currency": "USD", "direction": "inbound", "counterparty": "Beta LLC", "description": "Invoice #1041", "status": "completed", "created_at": "2025-12-27T09:00:00Z", "external_id": "inv_1041"},
+  {"amount_cents": -1200, "currency": "USD", "direction": "outbound", "counterparty": "Stripe", "description": "Processing fees", "status": "completed", "created_at": "2025-12-26T12:00:00Z", "external_id": "fee_stripe_dec"},
+  {"amount_cents": 78000, "currency": "USD", "direction": "inbound", "counterparty": "Acme Corp", "description": "Invoice #1040", "status": "completed", "created_at": "2025-12-23T14:00:00Z", "external_id": "inv_1040"},
+  {"amount_cents": -4500, "currency": "USD", "direction": "outbound", "counterparty": "AWS", "description": "Infrastructure - November", "status": "completed", "created_at": "2025-12-22T09:00:00Z", "external_id": "inv_aws_dec"},
+  {"amount_cents": 198000, "currency": "USD", "direction": "inbound", "counterparty": "Stripe Payout", "description": "Weekly payout - Dec 23", "status": "completed", "created_at": "2025-12-23T14:00:00Z", "external_id": "po_dec23"},
+  {"amount_cents": -15000, "currency": "USD", "direction": "outbound", "counterparty": "Vendor A", "description": "API usage - November", "status": "completed", "created_at": "2025-12-20T16:00:00Z", "external_id": "bill_va_dec"},
+  {"amount_cents": 56000, "currency": "USD", "direction": "inbound", "counterparty": "Startup XYZ", "description": "Invoice #1039", "status": "completed", "created_at": "2025-12-18T11:00:00Z", "external_id": "inv_1039"},
+  {"amount_cents": -3200, "currency": "USD", "direction": "outbound", "counterparty": "Domain Registrar", "description": "Annual renewal", "status": "completed", "created_at": "2025-12-15T08:00:00Z", "external_id": "dom_dec"},
+  {"amount_cents": 0, "currency": "USD", "direction": "outbound", "counterparty": "Unknown", "description": "Failed payout - retry scheduled", "status": "failed", "created_at": "2025-12-14T10:00:00Z", "external_id": "fail_dec14"},
+  {"amount_cents": 167000, "currency": "USD", "direction": "inbound", "counterparty": "Stripe Payout", "description": "Weekly payout - Dec 16", "status": "completed", "created_at": "2025-12-16T14:00:00Z", "external_id": "po_dec16"},
+  {"amount_cents": -8900, "currency": "USD", "direction": "outbound", "counterparty": "Payroll", "description": "Contractor payment", "status": "completed", "created_at": "2025-12-13T08:00:00Z", "external_id": "pay_dec13"},
+  {"amount_cents": 23400, "currency": "USD", "direction": "inbound", "counterparty": "Refund reversal", "description": "Customer chargeback reversed", "status": "completed", "created_at": "2025-12-12T15:00:00Z", "external_id": "rev_dec12"},
+  {"amount_cents": -50000, "currency": "USD", "direction": "outbound", "counterparty": "Tax Reserve", "description": "Q4 estimated tax", "status": "pending", "created_at": "2025-01-04T09:00:00Z", "external_id": "tax_q4_est"}
+]

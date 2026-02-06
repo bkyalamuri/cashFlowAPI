@@ -1,0 +1,282 @@
+[
+  {
+    "amount_cents": 7325,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Vendor A",
+    "description": "Contractor payment \u2014 Feb 04",
+    "status": "failed",
+    "created_at": "2026-02-04T13:29:00+00:00",
+    "external_id": "stripe_ou_0023"
+  },
+  {
+    "amount_cents": 153493,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Insurance",
+    "description": "Processing fees \u2014 Feb 01",
+    "status": "completed",
+    "created_at": "2026-02-01T17:12:00+00:00",
+    "external_id": "stripe_ou_0018"
+  },
+  {
+    "amount_cents": 406188,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Startup XYZ",
+    "description": "Chargeback reversal \u2014 Jan 26",
+    "status": "failed",
+    "created_at": "2026-01-26T10:36:00+00:00",
+    "external_id": "stripe_in_0003"
+  },
+  {
+    "amount_cents": 32456,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Weekly payout \u2014 Jan 24",
+    "status": "completed",
+    "created_at": "2026-01-24T17:14:00+00:00",
+    "external_id": "stripe_in_0013"
+  },
+  {
+    "amount_cents": 172080,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Stripe Fees",
+    "description": "Contractor payment \u2014 Jan 17",
+    "status": "completed",
+    "created_at": "2026-01-17T12:15:00+00:00",
+    "external_id": "stripe_ou_0002"
+  },
+  {
+    "amount_cents": 125972,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Marketplace Settlement",
+    "description": "Chargeback reversal \u2014 Jan 13",
+    "status": "failed",
+    "created_at": "2026-01-13T09:41:00+00:00",
+    "external_id": "stripe_in_0006"
+  },
+  {
+    "amount_cents": 6093,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Partner Revenue",
+    "description": "Partner settlement \u2014 Jan 12",
+    "status": "failed",
+    "created_at": "2026-01-12T12:42:00+00:00",
+    "external_id": "stripe_in_0025"
+  },
+  {
+    "amount_cents": 6487,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Customer payment \u2014 Jan 09",
+    "status": "completed",
+    "created_at": "2026-01-09T15:58:00+00:00",
+    "external_id": "stripe_in_0009"
+  },
+  {
+    "amount_cents": 223803,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Marketplace Settlement",
+    "description": "Marketplace earnings \u2014 Jan 08",
+    "status": "pending",
+    "created_at": "2026-01-08T17:30:00+00:00",
+    "external_id": "stripe_in_0004"
+  },
+  {
+    "amount_cents": 222761,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Stripe Fees",
+    "description": "Marketing campaign \u2014 Jan 05",
+    "status": "failed",
+    "created_at": "2026-01-05T10:09:00+00:00",
+    "external_id": "stripe_ou_0007"
+  },
+  {
+    "amount_cents": 1231,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Google Cloud",
+    "description": "Quarterly estimated tax \u2014 Jan 04",
+    "status": "pending",
+    "created_at": "2026-01-04T08:19:00+00:00",
+    "external_id": "stripe_ou_0008"
+  },
+  {
+    "amount_cents": 391251,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Chargeback reversal \u2014 Jan 01",
+    "status": "failed",
+    "created_at": "2026-01-01T22:55:00+00:00",
+    "external_id": "stripe_in_0011"
+  },
+  {
+    "amount_cents": 8815,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Payroll",
+    "description": "Contractor payment \u2014 Dec 28",
+    "status": "completed",
+    "created_at": "2025-12-28T13:44:00+00:00",
+    "external_id": "stripe_ou_0024"
+  },
+  {
+    "amount_cents": 156975,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Customer payment \u2014 Dec 27",
+    "status": "pending",
+    "created_at": "2025-12-27T14:38:00+00:00",
+    "external_id": "stripe_in_0010"
+  },
+  {
+    "amount_cents": 410544,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Invoice Payment",
+    "description": "Partner settlement \u2014 Dec 26",
+    "status": "failed",
+    "created_at": "2025-12-26T11:57:00+00:00",
+    "external_id": "stripe_in_0012"
+  },
+  {
+    "amount_cents": 72114,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Stripe Payout",
+    "description": "Subscription revenue \u2014 Dec 25",
+    "status": "failed",
+    "created_at": "2025-12-25T09:18:00+00:00",
+    "external_id": "stripe_in_0026"
+  },
+  {
+    "amount_cents": 19732,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Tax Reserve",
+    "description": "Processing fees \u2014 Dec 25",
+    "status": "completed",
+    "created_at": "2025-12-25T07:44:00+00:00",
+    "external_id": "stripe_ou_0022"
+  },
+  {
+    "amount_cents": 24841,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Weekly payout \u2014 Dec 23",
+    "status": "completed",
+    "created_at": "2025-12-23T19:25:00+00:00",
+    "external_id": "stripe_in_0020"
+  },
+  {
+    "amount_cents": 8252,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Wire transfer received \u2014 Dec 22",
+    "status": "completed",
+    "created_at": "2025-12-22T13:31:00+00:00",
+    "external_id": "stripe_in_0027"
+  },
+  {
+    "amount_cents": 387153,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "GlobalTech Inc",
+    "description": "Weekly payout \u2014 Dec 19",
+    "status": "failed",
+    "created_at": "2025-12-19T21:34:00+00:00",
+    "external_id": "stripe_in_0019"
+  },
+  {
+    "amount_cents": 329806,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Partner Revenue",
+    "description": "Marketplace earnings \u2014 Dec 19",
+    "status": "failed",
+    "created_at": "2025-12-19T16:18:00+00:00",
+    "external_id": "stripe_in_0015"
+  },
+  {
+    "amount_cents": 78131,
+    "currency": "USD",
+    "direction": "outbound",
+    "counterparty": "Domain Registrar",
+    "description": "Contractor payment \u2014 Dec 13",
+    "status": "completed",
+    "created_at": "2025-12-13T11:52:00+00:00",
+    "external_id": "stripe_ou_0014"
+  },
+  {
+    "amount_cents": 261548,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Startup XYZ",
+    "description": "Invoice payment \u2014 Dec 12",
+    "status": "completed",
+    "created_at": "2025-12-12T14:00:00+00:00",
+    "external_id": "stripe_in_0017"
+  },
+  {
+    "amount_cents": 18721,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Invoice Payment",
+    "description": "Invoice payment \u2014 Dec 11",
+    "status": "completed",
+    "created_at": "2025-12-11T16:47:00+00:00",
+    "external_id": "stripe_in_0021"
+  },
+  {
+    "amount_cents": 154798,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Beta LLC",
+    "description": "Invoice payment \u2014 Dec 11",
+    "status": "pending",
+    "created_at": "2025-12-11T10:49:00+00:00",
+    "external_id": "stripe_in_0000"
+  },
+  {
+    "amount_cents": 38713,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Marketplace Settlement",
+    "description": "Invoice payment \u2014 Dec 10",
+    "status": "failed",
+    "created_at": "2025-12-10T20:51:00+00:00",
+    "external_id": "stripe_in_0016"
+  },
+  {
+    "amount_cents": 315547,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Stripe Payout",
+    "description": "Subscription revenue \u2014 Dec 10",
+    "status": "completed",
+    "created_at": "2025-12-10T16:50:00+00:00",
+    "external_id": "stripe_in_0001"
+  },
+  {
+    "amount_cents": 180976,
+    "currency": "USD",
+    "direction": "inbound",
+    "counterparty": "Startup XYZ",
+    "description": "Invoice payment \u2014 Dec 10",
+    "status": "completed",
+    "created_at": "2025-12-10T08:24:00+00:00",
+    "external_id": "stripe_in_0005"
+  }
+]

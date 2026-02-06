@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cash Flow Copilot</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f172a; --bg-card: #1e293b; --bg-hover: #263348;
+      --border: #334155; --text: #f1f5f9; --text-muted: #94a3b8;
+      --accent: #34d399; --accent-dim: #065f46;
+      --inbound: #34d399; --outbound: #f87171;
+      --pending-color: #facc15; --refunded-color: #818cf8;
+      --sidebar-w: 380px;
+    }
+    html, body { height: 100%; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* === Layout === */
+    .app { display: grid; grid-template-columns: 1fr var(--sidebar-w); grid-template-rows: auto 1fr; height: 100vh; }
+    .header { grid-column: 1 / -1; display: flex; align-items: center; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--bg-card); }
+    .header h1 { font-size: 1.15rem; font-weight: 600; flex: 1; }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .main { padding: 1.5rem; overflow-y: auto; }
+    .sidebar { display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--bg); height: 100%; overflow: hidden; }
+
+    /* === Header buttons === */
+    .gear-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.35rem; border-radius: 6px; display: flex; align-items: center; }
+    .gear-btn:hover { color: var(--text); background: var(--bg-hover); }
+    .gear-btn svg { width: 20px; height: 20px; }
+    .regen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.85rem; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.82rem; font-weight: 500; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+    .regen-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(52,211,153,0.08); }
+    .regen-btn:active { transform: scale(0.97); }
+    .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .regen-btn svg { width: 15px; height: 15px; }
+    .regen-btn.spinning svg { animation: spin 0.8s linear infinite; }
+
+    /* === Date range picker === */
+    .date-range { display: flex; gap: 0.35rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .range-btn { padding: 0.35rem 0.75rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; }
+    .range-btn:hover { border-color: var(--accent); color: var(--text); }
+    .range-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    /* === Summary cards === */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1.15rem; transition: transform 0.15s, box-shadow 0.15s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .card-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .card-val { font-size: 1.4rem; font-weight: 700; }
+    .card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; }
+
+    /* === Chart === */
+    .chart-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1.15rem; margin-bottom: 1.5rem; }
+    .chart-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .chart-container { position: relative; height: 150px; display: flex; align-items: stretch; gap: 3px; }
+    .chart-zero { position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--border); z-index: 1; }
+    .chart-zero-label { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--text-muted); background: var(--bg-card); padding: 0 0.3rem; z-index: 2; }
+    .chart-col { flex: 1; position: relative; min-width: 0; cursor: default; }
+    .chart-col:hover .chart-bar { opacity: 0.8; }
+    .chart-bar { position: absolute; left: 15%; right: 15%; border-radius: 3px; transition: height 0.4s ease, opacity 0.15s; min-height: 2px; }
+    .chart-bar.pos { bottom: 50%; background: var(--inbound); border-radius: 3px 3px 0 0; }
+    .chart-bar.neg { top: 50%; background: var(--outbound); border-radius: 0 0 3px 3px; }
+    .chart-date { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
+    .chart-empty { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; }
+
+    /* === Payments table === */
+    .table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+    .table-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .table-meta { display: flex; align-items: center; gap: 0.75rem; }
+    .table-count { font-size: 0.82rem; color: var(--text-muted); }
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th { background: var(--bg-card); color: var(--text-muted); font-weight: 500; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+    tbody td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(even):not(.expand-row) { background: rgba(30,41,59,0.3); }
+    tbody tr.payment-row { cursor: pointer; }
+    tbody tr.payment-row:hover { background: var(--bg-hover); }
+    .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.78rem; font-weight: 500; }
+    .badge-in { background: rgba(52,211,153,0.15); color: var(--inbound); }
+    .badge-out { background: rgba(248,113,113,0.15); color: var(--outbound); }
+    .status-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; text-transform: capitalize; }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-badge .dot.completed { background: var(--inbound); }
+    .status-badge .dot.pending { background: var(--pending-color); }
+    .status-badge .dot.failed { background: var(--outbound); }
+    .status-badge .dot.refunded { background: var(--refunded-color); }
+
+    /* === Sortable columns === */
+    th.sortable { cursor: pointer; user-select: none; transition: color 0.15s; }
+    th.sortable:hover { color: var(--text); }
+    .sort-icon { font-size: 0.7rem; margin-left: 0.25rem; opacity: 0.35; }
+    th.sort-active .sort-icon { opacity: 1; color: var(--accent); }
+
+    /* === Expandable rows === */
+    .expand-row { display: none; }
+    .expand-row.open { display: table-row; }
+    .expand-row td { padding: 0; border-bottom: 1px solid var(--border); }
+    .expand-content { padding: 0.85rem 1.25rem; background: rgba(15,23,42,0.5); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem 1.5rem; }
+    .detail-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .detail-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .detail-value { font-size: 0.85rem; }
+
+    /* === Filter bar === */
+    .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .filter-select { padding: 0.4rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: 0.82rem; outline: none; cursor: pointer; }
+    .filter-select:focus { border-color: var(--accent); }
+    .filter-search { padding: 0.4rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: 0.82rem; outline: none; min-width: 170px; }
+    .filter-search:focus { border-color: var(--accent); }
+    .filter-search::placeholder { color: var(--text-muted); }
+
+    /* === Export button === */
+    .export-btn { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.7rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 500; transition: all 0.15s; }
+    .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .export-btn svg { width: 13px; height: 13px; }
+
+    /* === Sidebar: Copilot chat === */
+    .sidebar-header { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
+    .sidebar-header h2 { font-size: 1rem; font-weight: 600; flex: 1; }
+    .sidebar-status { font-size: 0.78rem; color: var(--text-muted); }
+    .clear-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0.25rem 0.4rem; border-radius: 4px; transition: all 0.15s; display: none; }
+    .clear-btn:hover { color: var(--outbound); background: rgba(248,113,113,0.1); }
+    .clear-btn.visible { display: block; }
+    .chat-area { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .chat-empty { text-align: center; color: var(--text-muted); font-size: 0.88rem; margin-top: 2rem; }
+    .chat-empty p { margin-bottom: 1rem; }
+    .chat-chips, .followup-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; padding: 0 0.5rem; }
+    .followup-chips { justify-content: flex-start; margin-top: 0.25rem; }
+    .chip { padding: 0.4rem 0.7rem; background: transparent; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
+    .chip:hover { border-color: var(--accent); color: var(--text); }
+    .msg { max-width: 88%; padding: 0.65rem 0.85rem; border-radius: 12px; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+    .msg-user { align-self: flex-end; background: var(--accent-dim); color: var(--accent); border-bottom-right-radius: 4px; }
+    .msg-bot { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .msg-thinking { align-self: flex-start; color: var(--text-muted); font-style: italic; font-size: 0.85rem; padding: 0.5rem 0.85rem; }
+    .chat-input-wrap { border-top: 1px solid var(--border); }
+    .shortcut-hint { text-align: center; padding: 0.3rem; font-size: 0.7rem; color: var(--text-muted); opacity: 0.6; transition: opacity 0.2s; }
+    .shortcut-hint kbd { background: var(--bg-hover); border: 1px solid var(--border); border-radius: 3px; padding: 0.05rem 0.35rem; font-family: inherit; font-size: 0.7rem; }
+    .shortcut-hint.hidden { opacity: 0; }
+    .chat-input-bar { padding: 0.5rem 1rem 0.75rem; display: flex; gap: 0.5rem; }
+    .chat-input-bar input { flex: 1; padding: 0.6rem 0.85rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem; outline: none; }
+    .chat-input-bar input:focus { border-color: var(--accent); }
+    .chat-input-bar button { padding: 0.6rem 1rem; background: var(--accent); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .chat-input-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* === Toast notifications === */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+    .toast { pointer-events: auto; padding: 0.7rem 1.15rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transform: translateX(120%); transition: transform 0.3s ease; }
+    .toast.show { transform: translateX(0); }
+    .toast.hide { animation: toast-out 0.3s ease forwards; }
+    .toast-success { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
+    .toast-info { background: #1e3a5f; color: #93c5fd; border: 1px solid #2563eb; }
+    .toast-error { background: #7c2d12; color: #fca5a5; border: 1px solid #dc2626; }
+
+    /* === Skeleton loading === */
+    .skel { background: var(--bg-hover); border-radius: 4px; animation: skel-pulse 1.5s ease-in-out infinite; }
+    .skel-sm { height: 12px; width: 55%; margin-bottom: 0.5rem; }
+    .skel-lg { height: 28px; width: 75%; }
+    .skel-row { height: 14px; width: 70%; margin: 0.15rem 0; }
+    .skel-row-short { height: 14px; width: 45%; margin: 0.15rem 0; }
+
+    /* === Modal === */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 420px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; margin-bottom: 1rem; }
+    .modal-header h2 { flex: 1; font-size: 1.1rem; font-weight: 600; }
+    .modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .modal-close:hover { color: var(--text); background: var(--bg-hover); }
+    .modal-section { margin-bottom: 1.25rem; }
+    .modal-section h3 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .modal-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; }
+    .modal-row .label { color: var(--text-muted); }
+    .modal-row .value { font-weight: 500; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.35rem; vertical-align: middle; }
+    .status-dot.green { background: var(--inbound); }
+    .status-dot.red { background: var(--outbound); }
+    .modal-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .modal-link:hover { text-decoration: underline; }
+
+    /* === Mobile toggle === */
+    .chat-toggle { display: none; position: fixed; bottom: 1.25rem; right: 1.25rem; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--bg); border: none; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 50; align-items: center; justify-content: center; }
+
+    /* === Loading / error === */
+    .err { color: var(--outbound); padding: 0.75rem; font-size: 0.88rem; }
+
+    /* === Responsive === */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: var(--sidebar-w); height: 100vh; z-index: 80; background: var(--bg); transition: right 0.3s ease; }
+      .sidebar.open { right: 0; }
+      .chat-toggle { display: flex; }
+      .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 75; }
+      .sidebar-backdrop.open { display: block; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .chart-container { min-height: 120px; }
+      .filter-bar { flex-direction: column; }
+      .filter-search { min-width: 100%; }
+    }
+
+    /* === Animations === */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes skel-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+    @keyframes toast-out { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <h1>Cash Flow Copilot</h1>
+    <div class="header-actions">
+      <button class="regen-btn" id="regen-btn" title="Regenerate test data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Regenerate Data
+      </button>
+      <button class="gear-btn" id="settings-btn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main dashboard -->
+  <main class="main">
+    <!-- Date range picker -->
+    <div class="date-range" id="date-range">
+      <button class="range-btn" data-days="7">7D</button>
+      <button class="range-btn" data-days="30">30D</button>
+      <button class="range-btn active" data-days="60">60D</button>
+      <button class="range-btn" data-days="90">90D</button>
+      <button class="range-btn" data-days="all">All</button>
+    </div>
+
+    <!-- Summary skeleton -->
+    <div id="summary-skeleton" class="cards">
+      <div class="card"><div class="skel skel-sm"></div><div class="skel skel-lg"></div></div>
+      <div class="card"><div class="skel skel-sm"></div><div class="skel skel-lg"></div></div>
+      <div class="card"><div class="skel skel-sm"></div><div class="skel skel-lg"></div></div>
+      <div class="card"><div class="skel skel-sm"></div><div class="skel skel-lg"></div></div>
+    </div>
+    <div id="summary-error" class="err" style="display:none;"></div>
+
+    <!-- Summary cards (hidden until loaded) -->
+    <div id="summary" style="display:none;">
+      <div class="cards">
+        <div class="card">
+          <div class="card-label">Total Inflows</div>
+          <div class="card-val" style="color:var(--inbound)" id="inflows">&mdash;</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Outflows</div>
+          <div class="card-val" style="color:var(--outbound)" id="outflows">&mdash;</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Net Cash Flow</div>
+          <div class="card-val" id="net">&mdash;</div>
+        </div>
+        <div class="card" id="txn-card">
+          <div class="card-label">Transactions</div>
+          <div class="card-val" id="txn-count">&mdash;</div>
+          <div class="card-sub" id="txn-breakdown"></div>
+        </div>
+      </div>
+      <div id="summary-dates" class="card-sub" style="margin-bottom:1rem;"></div>
+    </div>
+
+    <!-- Cash flow chart -->
+    <div id="chart-section" class="chart-section" style="display:none;">
+      <div class="chart-title">Daily Cash Flow</div>
+      <div class="chart-container" id="chart-container" style="padding-bottom:20px;"></div>
+    </div>
+
+    <!-- Payments header -->
+    <div class="table-header">
+      <h2>Recent Payments</h2>
+      <div class="table-meta">
+        <span class="table-count" id="payments-count"></span>
+        <button class="export-btn" id="export-btn" title="Export filtered payments to CSV">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <select class="filter-select" id="filter-direction">
+        <option value="">All Directions</option>
+        <option value="inbound">Inbound</option>
+        <option value="outbound">Outbound</option>
+      </select>
+      <select class="filter-select" id="filter-status">
+        <option value="">All Statuses</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+      </select>
+      <input type="text" class="filter-search" id="filter-search" placeholder="Search counterparty..." />
+    </div>
+
+    <!-- Payments skeleton -->
+    <div id="payments-skeleton">
+      <div class="table-wrap">
+        <table><thead><tr><th>Date</th><th>Counterparty</th><th>Direction</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><div class="skel skel-row"></div></td><td><div class="skel skel-row"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td></tr>
+            <tr><td><div class="skel skel-row"></div></td><td><div class="skel skel-row"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td></tr>
+            <tr><td><div class="skel skel-row"></div></td><td><div class="skel skel-row"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td></tr>
+            <tr><td><div class="skel skel-row"></div></td><td><div class="skel skel-row"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td></tr>
+            <tr><td><div class="skel skel-row"></div></td><td><div class="skel skel-row"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td><td><div class="skel skel-row-short"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="payments-error" class="err" style="display:none;"></div>
+
+    <!-- Payments table (hidden until loaded) -->
+    <div id="payments-wrap" style="display:none;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="date">Date <span class="sort-icon">↓</span></th>
+              <th class="sortable" data-sort="counterparty">Counterparty <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-sort="direction">Direction <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-sort="amount">Amount <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-sort="status">Status <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="payments-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Copilot sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Copilot</h2>
+      <span class="sidebar-status" id="copilot-status-dot"></span>
+      <button class="clear-btn" id="clear-chat" title="Clear conversation">Clear</button>
+    </div>
+    <div class="chat-area" id="chat-area">
+      <div class="chat-empty" id="chat-empty">
+        <p>Ask anything about your cash flow, payments, or runway.</p>
+        <div class="chat-chips" id="chat-chips">
+          <button class="chip">What were total inflows?</button>
+          <button class="chip">How does net cash flow look?</button>
+          <button class="chip">Who are my top counterparties?</button>
+          <button class="chip">Any failed or pending payments?</button>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-wrap">
+      <div class="shortcut-hint" id="shortcut-hint">Press <kbd>/</kbd> to focus</div>
+      <form class="chat-input-bar" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Ask a question..." autocomplete="off" />
+        <button type="submit" id="chat-send">Send</button>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<!-- Mobile sidebar backdrop & toggle -->
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+<button class="chat-toggle" id="chat-toggle" title="Open Copilot">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Settings</h2>
+      <button class="modal-close" id="modal-close">&times;</button>
+    </div>
+    <div class="modal-section">
+      <h3>About</h3>
+      <div class="modal-row"><span class="label">Application</span><span class="value" id="s-app-name">Cash Flow Copilot</span></div>
+      <div class="modal-row"><span class="label">Version</span><span class="value" id="s-version">&mdash;</span></div>
+      <div class="modal-row"><span class="label">Description</span><span class="value" id="s-description" style="text-align:right;max-width:60%;">&mdash;</span></div>
+    </div>
+    <div class="modal-section">
+      <h3>Configuration</h3>
+      <div class="modal-row"><span class="label">Data source</span><span class="value" id="s-datasource">&mdash;</span></div>
+      <div class="modal-row"><span class="label">Copilot</span><span class="value" id="s-copilot">&mdash;</span></div>
+      <div class="modal-row"><span class="label">Model</span><span class="value" id="s-model">&mdash;</span></div>
+    </div>
+    <div class="modal-section">
+      <h3>Links</h3>
+      <div style="display:flex;gap:1rem;">
+        <a class="modal-link" href="/docs" target="_blank">API Documentation</a>
+        <a class="modal-link" href="https://github.com" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   CONFIG & STATE
+   =================================================================== */
+// Use relative URL when served from same host (port 8000), else hostname:8000
+const API = (window.location.port === '8000')
+  ? '/api/v1'
+  : window.location.protocol + '//' + window.location.hostname + ':8000/api/v1';
+
+if (window.location.protocol === 'file:') {
+  console.warn('Demo must be served from a web server (e.g. python3 -m http.server 5173)');
+}
+
+let allPayments = [];
+let sortState = { key: 'date', dir: 'desc' };
+let activeDays = 60;
+let dateRangeStart = null;
+let chatActive = false;
+let expandedRow = null;
+
+/* ===================================================================
+   UTILITIES
+   =================================================================== */
+const fmt = (cents) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const fmtFull = (iso) => new Date(iso).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const escHtml = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+
+function showToast(message, type, duration) {
+  type = type || 'success'; duration = duration || 3500;
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(function() { toast.classList.add('show'); });
+  setTimeout(function() {
+    toast.classList.add('hide');
+    toast.addEventListener('animationend', function() { toast.remove(); });
+  }, duration);
+}
+
+function animateValue(el, endCents, duration) {
+  duration = duration || 700;
+  if (el._af) cancelAnimationFrame(el._af);
+  var startCents = el._cur || 0;
+  var startTime = performance.now();
+  function tick(now) {
+    var t = Math.min((now - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - t, 3);
+    var current = Math.round(startCents + (endCents - startCents) * eased);
+    el.textContent = fmt(current);
+    el._cur = current;
+    if (t < 1) el._af = requestAnimationFrame(tick);
+    else el._cur = endCents;
+  }
+  el._af = requestAnimationFrame(tick);
+}
+
+/* ===================================================================
+   DASHBOARD: SUMMARY + CHART
+   =================================================================== */
+function loadSummary(days) {
+  // Show skeleton
+  document.getElementById('summary-skeleton').style.display = 'grid';
+  document.getElementById('summary').style.display = 'none';
+  document.getElementById('summary-error').style.display = 'none';
+  document.getElementById('chart-section').style.display = 'none';
+
+  var params = '';
+  if (days !== 'all') {
+    var end = new Date();
+    var start = new Date(end.getTime() - days * 86400000);
+    dateRangeStart = start;
+    params = '?start_date=' + start.toISOString().split('T')[0] + '&end_date=' + end.toISOString().split('T')[0];
+  } else {
+    dateRangeStart = null;
+    params = '?start_date=2020-01-01&end_date=' + new Date().toISOString().split('T')[0];
+  }
+
+  fetch(API + '/cashflow/summary' + params)
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.statusText); })
+    .then(function(d) {
+      document.getElementById('summary-skeleton').style.display = 'none';
+      document.getElementById('summary').style.display = 'block';
+
+      animateValue(document.getElementById('inflows'), d.total_inflow_cents);
+      animateValue(document.getElementById('outflows'), d.total_outflow_cents);
+
+      var netEl = document.getElementById('net');
+      animateValue(netEl, d.net_cents);
+      netEl.style.color = d.net_cents >= 0 ? 'var(--inbound)' : 'var(--outbound)';
+
+      document.getElementById('summary-dates').textContent = d.start_date + '  \u2192  ' + d.end_date;
+
+      renderChart(d.periods || []);
+      updateTxnCard();
+
+      // Also re-filter payments for new date range
+      if (allPayments.length) renderPayments();
+    })
+    .catch(function() {
+      document.getElementById('summary-skeleton').style.display = 'none';
+      var el = document.getElementById('summary-error');
+      el.style.display = 'block';
+      el.textContent = 'Could not load summary. Is the backend running on port 8000?';
+    });
+}
+
+function renderChart(periods) {
+  var section = document.getElementById('chart-section');
+  var container = document.getElementById('chart-container');
+
+  // Only show days with transactions
+  var active = periods.filter(function(p) { return p.transaction_count > 0; });
+  // Show up to 20 most recent active days
+  if (active.length > 20) active = active.slice(active.length - 20);
+
+  if (active.length === 0) {
+    section.style.display = 'block';
+    container.innerHTML = '<div class="chart-empty">No transactions in this period</div>';
+    container.style.height = 'auto';
+    return;
+  }
+
+  container.style.height = '150px';
+  var maxAbs = Math.max.apply(null, active.map(function(p) { return Math.abs(p.net_cents); }));
+  if (maxAbs === 0) maxAbs = 1;
+
+  var html = '<div class="chart-zero"></div><div class="chart-zero-label">$0</div>';
+  active.forEach(function(p) {
+    var pct = (Math.abs(p.net_cents) / maxAbs) * 46;
+    var cls = p.net_cents >= 0 ? 'pos' : 'neg';
+    var dateStr = new Date(p.period_start + 'T12:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+    var tip = dateStr + ': ' + fmt(p.net_cents) + ' net (' + fmt(p.inflow_cents) + ' in, ' + fmt(p.outflow_cents) + ' out)';
+    html += '<div class="chart-col" title="' + escHtml(tip) + '">' +
+      '<div class="chart-bar ' + cls + '" style="height:' + Math.max(pct, 1.5) + '%"></div>' +
+      '<div class="chart-date">' + dateStr + '</div>' +
+      '</div>';
+  });
+
+  container.innerHTML = html;
+  section.style.display = 'block';
+}
+
+/* ===================================================================
+   DASHBOARD: PAYMENTS
+   =================================================================== */
+function loadPayments() {
+  document.getElementById('payments-skeleton').style.display = 'block';
+  document.getElementById('payments-wrap').style.display = 'none';
+  document.getElementById('payments-error').style.display = 'none';
+
+  fetch(API + '/payments?limit=200')
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.statusText); })
+    .then(function(list) {
+      allPayments = list;
+      document.getElementById('payments-skeleton').style.display = 'none';
+      document.getElementById('payments-wrap').style.display = 'block';
+      renderPayments();
+      updateTxnCard();
+    })
+    .catch(function() {
+      document.getElementById('payments-skeleton').style.display = 'none';
+      var el = document.getElementById('payments-error');
+      el.style.display = 'block';
+      el.textContent = 'Could not load payments. Is the backend running on port 8000?';
+    });
+}
+
+function getFilteredSorted() {
+  var data = allPayments.slice();
+  var dirF = document.getElementById('filter-direction').value;
+  var statusF = document.getElementById('filter-status').value;
+  var searchF = document.getElementById('filter-search').value.toLowerCase().trim();
+
+  // Date range filter
+  if (dateRangeStart) {
+    var cutoff = dateRangeStart.getTime();
+    data = data.filter(function(p) { return new Date(p.created_at).getTime() >= cutoff; });
+  }
+  if (dirF) data = data.filter(function(p) { return p.direction === dirF; });
+  if (statusF) data = data.filter(function(p) { return p.status === statusF; });
+  if (searchF) data = data.filter(function(p) { return (p.counterparty || '').toLowerCase().indexOf(searchF) !== -1; });
+
+  // Sort
+  data.sort(function(a, b) {
+    var va, vb;
+    switch (sortState.key) {
+      case 'date': va = a.created_at; vb = b.created_at; break;
+      case 'counterparty': va = (a.counterparty || '').toLowerCase(); vb = (b.counterparty || '').toLowerCase(); break;
+      case 'direction': va = a.direction; vb = b.direction; break;
+      case 'amount': va = a.direction === 'outbound' ? -Math.abs(a.amount_cents) : a.amount_cents; vb = b.direction === 'outbound' ? -Math.abs(b.amount_cents) : b.amount_cents; break;
+      case 'status': va = a.status; vb = b.status; break;
+      default: va = a.created_at; vb = b.created_at;
+    }
+    if (va < vb) return sortState.dir === 'asc' ? -1 : 1;
+    if (va > vb) return sortState.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  return data;
+}
+
+function renderPayments() {
+  var data = getFilteredSorted();
+  var tbody = document.getElementById('payments-tbody');
+  tbody.innerHTML = '';
+  expandedRow = null;
+
+  data.forEach(function(p, i) {
+    var tr = document.createElement('tr');
+    tr.className = 'payment-row';
+    tr.setAttribute('data-idx', i);
+    var amt = p.direction === 'outbound' ? -Math.abs(p.amount_cents) : p.amount_cents;
+    var dirClass = p.direction === 'inbound' ? 'badge-in' : 'badge-out';
+    var dirLabel = p.direction === 'inbound' ? 'Inbound' : 'Outbound';
+    var dotClass = p.status || 'completed';
+    tr.innerHTML =
+      '<td>' + fmtDate(p.created_at) + '</td>' +
+      '<td>' + escHtml(p.counterparty || '\u2014') + '</td>' +
+      '<td><span class="badge ' + dirClass + '">' + dirLabel + '</span></td>' +
+      '<td style="color:' + (p.direction === 'inbound' ? 'var(--inbound)' : 'var(--outbound)') + ';font-weight:500;">' + fmt(amt) + '</td>' +
+      '<td><span class="status-badge"><span class="dot ' + dotClass + '"></span>' + p.status + '</span></td>';
+    tr.addEventListener('click', function() { toggleExpand(i, p); });
+    tbody.appendChild(tr);
+
+    // Expand row (hidden by default)
+    var exTr = document.createElement('tr');
+    exTr.className = 'expand-row';
+    exTr.id = 'expand-' + i;
+    exTr.innerHTML = '<td colspan="5"><div class="expand-content">' +
+      '<div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">' + escHtml(p.description || '\u2014') + '</span></div>' +
+      '<div class="detail-item"><span class="detail-label">Full Timestamp</span><span class="detail-value">' + fmtFull(p.created_at) + '</span></div>' +
+      '<div class="detail-item"><span class="detail-label">External ID</span><span class="detail-value">' + escHtml(p.external_id || '\u2014') + '</span></div>' +
+      '<div class="detail-item"><span class="detail-label">Currency</span><span class="detail-value">' + escHtml(p.currency || 'USD') + '</span></div>' +
+      '</div></td>';
+    tbody.appendChild(exTr);
+  });
+
+  // Update count
+  var dateFiltered = allPayments.slice();
+  if (dateRangeStart) {
+    var c = dateRangeStart.getTime();
+    dateFiltered = dateFiltered.filter(function(p) { return new Date(p.created_at).getTime() >= c; });
+  }
+  var countText = 'Showing ' + data.length;
+  if (data.length !== dateFiltered.length) countText += ' of ' + dateFiltered.length;
+  countText += ' payment' + (data.length !== 1 ? 's' : '');
+  document.getElementById('payments-count').textContent = countText;
+}
+
+function toggleExpand(idx) {
+  var row = document.getElementById('expand-' + idx);
+  if (!row) return;
+  if (expandedRow !== null && expandedRow !== idx) {
+    var prev = document.getElementById('expand-' + expandedRow);
+    if (prev) prev.classList.remove('open');
+  }
+  row.classList.toggle('open');
+  expandedRow = row.classList.contains('open') ? idx : null;
+}
+
+function updateTxnCard() {
+  if (!allPayments.length) return;
+  var data = allPayments.slice();
+  if (dateRangeStart) {
+    var c = dateRangeStart.getTime();
+    data = data.filter(function(p) { return new Date(p.created_at).getTime() >= c; });
+  }
+  var completed = 0, pending = 0, failed = 0;
+  data.forEach(function(p) {
+    if (p.status === 'completed') completed++;
+    else if (p.status === 'pending') pending++;
+    else if (p.status === 'failed') failed++;
+  });
+  document.getElementById('txn-count').textContent = data.length;
+  document.getElementById('txn-breakdown').textContent = completed + ' completed \u00B7 ' + pending + ' pending \u00B7 ' + failed + ' failed';
+}
+
+/* === Sort headers === */
+function handleSort(key) {
+  if (sortState.key === key) {
+    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortState.key = key;
+    sortState.dir = (key === 'date') ? 'desc' : 'asc';
+  }
+  updateSortIcons();
+  renderPayments();
+}
+
+function updateSortIcons() {
+  document.querySelectorAll('th.sortable').forEach(function(th) {
+    var icon = th.querySelector('.sort-icon');
+    if (th.dataset.sort === sortState.key) {
+      th.classList.add('sort-active');
+      icon.textContent = sortState.dir === 'asc' ? '\u2191' : '\u2193';
+    } else {
+      th.classList.remove('sort-active');
+      icon.textContent = '\u2195';
+    }
+  });
+}
+
+/* === Export CSV === */
+function exportCSV() {
+  var data = getFilteredSorted();
+  if (!data.length) { showToast('No payments to export', 'info'); return; }
+  var headers = ['Date', 'Counterparty', 'Direction', 'Amount ($)', 'Status', 'Description', 'External ID'];
+  var rows = data.map(function(p) {
+    return [
+      p.created_at,
+      p.counterparty || '',
+      p.direction,
+      (p.amount_cents / 100).toFixed(2),
+      p.status,
+      p.description || '',
+      p.external_id || ''
+    ];
+  });
+  var csv = headers.join(',') + '\n';
+  rows.forEach(function(r) {
+    csv += r.map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',') + '\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'payments_export.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported ' + data.length + ' payments to CSV');
+}
+
+/* ===================================================================
+   COPILOT
+   =================================================================== */
+var chatArea = document.getElementById('chat-area');
+var chatEmpty = document.getElementById('chat-empty');
+var chatForm = document.getElementById('chat-form');
+var chatInput = document.getElementById('chat-input');
+var chatSend = document.getElementById('chat-send');
+
+function addMsg(text, cls) {
+  var div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return div;
+}
+
+function removeFollowUps() {
+  var existing = chatArea.querySelectorAll('.followup-chips');
+  existing.forEach(function(el) { el.remove(); });
+}
+
+function showFollowUps(lastQuestion) {
+  removeFollowUps();
+  var suggestions = getFollowUps(lastQuestion);
+  var container = document.createElement('div');
+  container.className = 'followup-chips';
+  suggestions.forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = s;
+    btn.addEventListener('click', function() { sendQuestion(s); });
+    container.appendChild(btn);
+  });
+  chatArea.appendChild(container);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function getFollowUps(question) {
+  var q = question.toLowerCase();
+  if (q.indexOf('inflow') !== -1) return ['Break down inflows by counterparty', 'Compare inflows to outflows', 'What is the largest inflow?'];
+  if (q.indexOf('outflow') !== -1 || q.indexOf('expense') !== -1) return ['What are the largest outflows?', 'Compare outflows to inflows', 'Any recurring outflows?'];
+  if (q.indexOf('net') !== -1 || q.indexOf('cash flow') !== -1) return ['What drives the net position?', 'Any days with negative cash flow?', 'What is the daily average?'];
+  if (q.indexOf('counterpart') !== -1 || q.indexOf('top') !== -1) return ['Show payments from the largest one', 'Any new counterparties recently?', 'Total volume by counterparty'];
+  if (q.indexOf('fail') !== -1 || q.indexOf('pending') !== -1) return ['How much is stuck in pending?', 'When did failures occur?', 'What is the failure rate?'];
+  if (q.indexOf('trend') !== -1 || q.indexOf('daily') !== -1) return ['Any concerning trends?', 'Best day for cash flow?', 'Worst day for cash flow?'];
+  return ['Summarize cash flow', 'Any failed or pending payments?', 'Who are the top counterparties?'];
+}
+
+function sendQuestion(q) {
+  if (!q.trim()) return;
+  if (!chatActive) {
+    chatEmpty.style.display = 'none';
+    chatActive = true;
+    document.getElementById('clear-chat').classList.add('visible');
+  }
+  removeFollowUps();
+  addMsg(q, 'msg-user');
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  var thinking = document.createElement('div');
+  thinking.className = 'msg-thinking';
+  thinking.textContent = 'Thinking\u2026';
+  chatArea.appendChild(thinking);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  fetch(API + '/copilot/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: q })
+  })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+    .then(function(res) {
+      thinking.remove();
+      if (res.ok) {
+        addMsg(res.j.answer, 'msg-bot');
+        showFollowUps(q);
+      } else {
+        addMsg(res.j.detail || 'Request failed.', 'msg-bot');
+      }
+    })
+    .catch(function(e) {
+      thinking.remove();
+      var msg = (e && e.message) || String(e);
+      addMsg(msg === 'Failed to fetch' ? 'Network error \u2014 is the backend running?' : msg, 'msg-bot');
+    })
+    .finally(function() { chatSend.disabled = false; chatInput.focus(); });
+}
+
+function clearChat() {
+  // Remove all messages and follow-ups
+  var msgs = chatArea.querySelectorAll('.msg, .msg-thinking, .followup-chips');
+  msgs.forEach(function(el) { el.remove(); });
+  chatEmpty.style.display = 'block';
+  chatActive = false;
+  document.getElementById('clear-chat').classList.remove('visible');
+  chatInput.value = '';
+}
+
+/* ===================================================================
+   EVENT LISTENERS
+   =================================================================== */
+
+// Date range buttons
+document.querySelectorAll('.range-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var days = btn.dataset.days;
+    activeDays = days === 'all' ? 'all' : parseInt(days);
+    loadSummary(activeDays);
+  });
+});
+
+// Filter inputs
+document.getElementById('filter-direction').addEventListener('change', renderPayments);
+document.getElementById('filter-status').addEventListener('change', renderPayments);
+var searchTimer = null;
+document.getElementById('filter-search').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderPayments, 200);
+});
+
+// Sort headers (event delegation)
+document.querySelectorAll('th.sortable').forEach(function(th) {
+  th.addEventListener('click', function() { handleSort(th.dataset.sort); });
+});
+
+// Export CSV
+document.getElementById('export-btn').addEventListener('click', exportCSV);
+
+// Regenerate data
+var regenBtn = document.getElementById('regen-btn');
+regenBtn.addEventListener('click', function() {
+  regenBtn.disabled = true;
+  regenBtn.classList.add('spinning');
+  fetch(API + '/payments/regenerate', { method: 'POST' })
+    .then(async function(r) {
+      var text = await r.text();
+      if (!r.ok) {
+        var msg = r.status + ' ' + r.statusText;
+        try { var j = JSON.parse(text); msg = j.detail || msg; } catch (_) {}
+        throw new Error(msg);
+      }
+      return text ? JSON.parse(text) : {};
+    })
+    .then(function(d) {
+      showToast('Generated ' + d.count + ' new payments \u2014 ' + fmt(d.total_inflow_cents) + ' in, ' + fmt(d.total_outflow_cents) + ' out', 'success', 4000);
+      loadSummary(activeDays);
+      loadPayments();
+    })
+    .catch(function(e) {
+      var msg = e instanceof Error ? e.message : String(e);
+      if (msg === 'Failed to fetch' || msg.indexOf('NetworkError') !== -1) {
+        showToast('Cannot reach backend. Is it running on port 8000?', 'error');
+      } else {
+        showToast('Regenerate failed: ' + msg, 'error');
+      }
+    })
+    .finally(function() {
+      regenBtn.disabled = false;
+      regenBtn.classList.remove('spinning');
+    });
+});
+
+// Clear chat
+document.getElementById('clear-chat').addEventListener('click', clearChat);
+
+// Copilot form
+chatForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  sendQuestion(chatInput.value.trim());
+});
+
+// Suggestion chips
+document.querySelectorAll('#chat-chips .chip').forEach(function(btn) {
+  btn.addEventListener('click', function() { sendQuestion(btn.textContent); });
+});
+
+// Keyboard shortcut: / to focus copilot
+var shortcutHint = document.getElementById('shortcut-hint');
+document.addEventListener('keydown', function(e) {
+  if (e.key === '/' && !e.target.matches('input, textarea, select')) {
+    e.preventDefault();
+    chatInput.focus();
+  }
+});
+chatInput.addEventListener('focus', function() { shortcutHint.classList.add('hidden'); });
+chatInput.addEventListener('blur', function() { shortcutHint.classList.remove('hidden'); });
+
+// Mobile sidebar toggle
+var sidebarEl = document.getElementById('sidebar');
+var backdrop = document.getElementById('sidebar-backdrop');
+var toggleBtn = document.getElementById('chat-toggle');
+function openSidebar() { sidebarEl.classList.add('open'); backdrop.classList.add('open'); }
+function closeSidebar() { sidebarEl.classList.remove('open'); backdrop.classList.remove('open'); }
+toggleBtn.addEventListener('click', openSidebar);
+backdrop.addEventListener('click', closeSidebar);
+
+// Settings modal
+var modalOverlay = document.getElementById('modal-overlay');
+document.getElementById('settings-btn').addEventListener('click', function() { modalOverlay.classList.add('open'); });
+document.getElementById('modal-close').addEventListener('click', function() { modalOverlay.classList.remove('open'); });
+modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) modalOverlay.classList.remove('open'); });
+
+/* ===================================================================
+   INITIAL LOAD
+   =================================================================== */
+loadSummary(60);
+loadPayments();
+
+// Copilot status
+fetch(API + '/copilot/status')
+  .then(function(r) { return r.ok ? r.json() : Promise.reject(''); })
+  .then(function(s) {
+    var dot = document.getElementById('copilot-status-dot');
+    dot.innerHTML = s.configured
+      ? '<span class="status-dot green"></span> Online'
+      : '<span class="status-dot red"></span> Not configured';
+  })
+  .catch(function() {
+    document.getElementById('copilot-status-dot').innerHTML = '<span class="status-dot red"></span> Offline';
+  });
+
+// Settings
+fetch(API.replace('/api/v1', '') + '/api/v1/settings')
+  .then(function(r) { return r.ok ? r.json() : Promise.reject(''); })
+  .then(function(s) {
+    document.getElementById('s-app-name').textContent = s.app_name || 'Cash Flow Copilot';
+    document.getElementById('s-version').textContent = s.version || '\u2014';
+    document.getElementById('s-description').textContent = s.description || '\u2014';
+    document.getElementById('s-datasource').textContent = s.datasource || '\u2014';
+    var copilotEl = document.getElementById('s-copilot');
+    copilotEl.innerHTML = s.copilot_configured
+      ? '<span class="status-dot green"></span> Configured'
+      : '<span class="status-dot red"></span> Not configured';
+    document.getElementById('s-model').textContent = s.copilot_model || 'N/A';
+  })
+  .catch(function() {});
+</script>
+</body>
+</html>
