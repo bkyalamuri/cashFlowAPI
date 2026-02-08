@@ -1,4 +1,4 @@
-"""Copilot: answer natural language questions using cash flow data and an LLM."""
+"""Copilot: answer natural language questions using cash flow and inventory data and an LLM."""
 import logging
 from datetime import date
 
@@ -8,6 +8,7 @@ from app.config import settings
 from app.models.copilot import CopilotAskResponse
 from app.services.cashflow_service import get_cashflow_summary
 from app.services.payment_store import get_payment_store
+from app.services.inventory_store import get_inventory_store
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,46 @@ def _build_payments_context() -> str:
     return "\n".join(lines)
 
 
+def _build_inventory_context() -> str:
+    """Build a detailed data context from inventory for the LLM."""
+    store = get_inventory_store()
+    items = store.list()
+
+    if not items:
+        return "No inventory data available."
+
+    low_stock = [i for i in items if i.quantity <= i.low_stock_threshold]
+    by_category: dict[str, list] = {}
+    for i in items:
+        by_category.setdefault(i.category, []).append(i)
+    total_units = sum(i.quantity for i in items)
+
+    lines = [
+        f"Inventory: {len(items)} products, {total_units} total units",
+        f"Low stock (<= threshold): {len(low_stock)} items",
+        "",
+        "Products by category:",
+    ]
+
+    for cat in sorted(by_category.keys()):
+        lines.append(f"  {cat}:")
+        for i in sorted(by_category[cat], key=lambda x: x.name):
+            status = "LOW STOCK" if i.quantity <= i.low_stock_threshold else "OK"
+            lines.append(
+                f"    - {i.name} (SKU: {i.sku or 'N/A'}): {i.quantity} units, threshold {i.low_stock_threshold} [{status}]"
+            )
+
+    if low_stock:
+        lines.extend([
+            "",
+            "Low stock items (consider restocking):",
+        ])
+        for i in sorted(low_stock, key=lambda x: x.quantity):
+            lines.append(f"  - {i.name}: {i.quantity} left (threshold {i.low_stock_threshold})")
+
+    return "\n".join(lines)
+
+
 def ask_copilot(question: str, context: dict) -> CopilotAskResponse:
     client = OpenAI(
         api_key=settings.openai_api_key,
@@ -64,14 +105,23 @@ def ask_copilot(question: str, context: dict) -> CopilotAskResponse:
         timeout=30.0,
     )
 
-    data_blurb = _build_payments_context()
+    payments_blurb = _build_payments_context()
+    inventory_blurb = _build_inventory_context()
 
-    system = """You are a helpful cash flow copilot for a payments system.
-Answer concisely using the provided payment data. Use dollars (e.g. $1,234.56) when mentioning amounts.
-You have access to the full list of payments including dates, amounts, counterparties, descriptions, and statuses.
+    system = """You are a helpful copilot for a business that has cash flow/payments data and inventory data (pickleball clothing and equipment).
+Answer concisely using the provided data.
+- For payments: use dollars (e.g. $1,234.56) when mentioning amounts.
+- For inventory: you have product names, categories, SKUs, quantities, and low-stock thresholds. Low stock items need restocking.
+You can answer questions about cash flow, payments, inventory levels, low stock items, product categories, and restocking needs.
 If the question cannot be answered from the data, say so and suggest what data would help."""
 
-    user_content = f"Payment data:\n{data_blurb}\n\nQuestion: {question}"
+    user_content = f"""Payment data:
+{payments_blurb}
+
+Inventory data:
+{inventory_blurb}
+
+Question: {question}"""
 
     try:
         response = client.chat.completions.create(
@@ -100,5 +150,5 @@ If the question cannot be answered from the data, say so and suggest what data w
     answer = response.choices[0].message.content or "I couldn't generate an answer."
     return CopilotAskResponse(
         answer=answer,
-        sources_used=["cashflow_summary_30d"],
+        sources_used=["cashflow", "inventory"],
     )

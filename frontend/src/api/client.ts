@@ -59,6 +59,23 @@ export interface RegenerateResponse {
   net_cents: number;
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  sku: string | null;
+  quantity: number;
+  low_stock_threshold: number;
+}
+
+export interface InventoryTransactionResponse {
+  item_id: string;
+  item_name: string;
+  quantity_sold: number;
+  new_quantity: number;
+  low_stock_alert: { item_name: string; quantity: number } | null;
+}
+
 export const api = {
   payments: {
     list: (params?: { limit?: number; direction?: string; status?: string }) => {
@@ -89,6 +106,17 @@ export const api = {
       request<CopilotResponse>('/copilot/ask', {
         method: 'POST',
         body: JSON.stringify({ question, context }),
+      }),
+  },
+  inventory: {
+    list: (category?: string) => {
+      const q = category ? `?category=${encodeURIComponent(category)}` : '';
+      return request<InventoryItem[]>(`/inventory${q}`);
+    },
+    recordTransaction: (itemId: string, quantity: number) =>
+      request<InventoryTransactionResponse>('/inventory/transaction', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: itemId, quantity }),
       }),
   },
 };

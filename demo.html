@@ -7,11 +7,11 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f172a; --bg-card: #1e293b; --bg-hover: #263348;
-      --border: #334155; --text: #f1f5f9; --text-muted: #94a3b8;
-      --accent: #34d399; --accent-dim: #065f46;
-      --inbound: #34d399; --outbound: #f87171;
-      --pending-color: #facc15; --refunded-color: #818cf8;
+      --bg: #f8fafc; --bg-card: #ffffff; --bg-hover: #f1f5f9;
+      --border: #e2e8f0; --text: #0f172a; --text-muted: #64748b;
+      --accent: #0d9488; --accent-dim: #0f766e;
+      --inbound: #10b981; --outbound: #dc2626;
+      --pending-color: #d97706; --refunded-color: #7c3aed;
       --sidebar-w: 380px;
     }
     html, body { height: 100%; }
@@ -30,17 +30,25 @@
     .gear-btn:hover { color: var(--text); background: var(--bg-hover); }
     .gear-btn svg { width: 20px; height: 20px; }
     .regen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.85rem; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.82rem; font-weight: 500; transition: border-color 0.2s, color 0.2s, background 0.2s; }
-    .regen-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(52,211,153,0.08); }
+    .regen-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(13,148,136,0.08); }
     .regen-btn:active { transform: scale(0.97); }
     .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .regen-btn svg { width: 15px; height: 15px; }
     .regen-btn.spinning svg { animation: spin 0.8s linear infinite; }
 
+    /* === Tab bar === */
+    .tab-bar { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .tab-btn { padding: 0.6rem 1rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.9rem; font-weight: 500; transition: color 0.15s, border-color 0.15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
     /* === Date range picker === */
     .date-range { display: flex; gap: 0.35rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
     .range-btn { padding: 0.35rem 0.75rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; }
     .range-btn:hover { border-color: var(--accent); color: var(--text); }
-    .range-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .range-btn.active { background: rgba(13,148,136,0.12); border-color: var(--accent); color: var(--accent); }
 
     /* === Summary cards === */
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
@@ -73,12 +81,12 @@
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
     thead th { background: var(--bg-card); color: var(--text-muted); font-weight: 500; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
     tbody td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); }
-    tbody tr:nth-child(even):not(.expand-row) { background: rgba(30,41,59,0.3); }
+    tbody tr:nth-child(even):not(.expand-row) { background: var(--bg); }
     tbody tr.payment-row { cursor: pointer; }
     tbody tr.payment-row:hover { background: var(--bg-hover); }
     .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.78rem; font-weight: 500; }
-    .badge-in { background: rgba(52,211,153,0.15); color: var(--inbound); }
-    .badge-out { background: rgba(248,113,113,0.15); color: var(--outbound); }
+    .badge-in { background: rgba(16,185,129,0.15); color: var(--inbound); }
+    .badge-out { background: rgba(220,38,38,0.12); color: var(--outbound); }
     .status-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; text-transform: capitalize; }
     .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
     .status-badge .dot.completed { background: var(--inbound); }
@@ -96,7 +104,7 @@
     .expand-row { display: none; }
     .expand-row.open { display: table-row; }
     .expand-row td { padding: 0; border-bottom: 1px solid var(--border); }
-    .expand-content { padding: 0.85rem 1.25rem; background: rgba(15,23,42,0.5); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem 1.5rem; }
+    .expand-content { padding: 0.85rem 1.25rem; background: var(--bg); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem 1.5rem; }
     .detail-item { display: flex; flex-direction: column; gap: 0.15rem; }
     .detail-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .detail-value { font-size: 0.85rem; }
@@ -119,7 +127,7 @@
     .sidebar-header h2 { font-size: 1rem; font-weight: 600; flex: 1; }
     .sidebar-status { font-size: 0.78rem; color: var(--text-muted); }
     .clear-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0.25rem 0.4rem; border-radius: 4px; transition: all 0.15s; display: none; }
-    .clear-btn:hover { color: var(--outbound); background: rgba(248,113,113,0.1); }
+    .clear-btn:hover { color: var(--outbound); background: rgba(220,38,38,0.08); }
     .clear-btn.visible { display: block; }
     .chat-area { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .chat-empty { text-align: center; color: var(--text-muted); font-size: 0.88rem; margin-top: 2rem; }
@@ -147,9 +155,9 @@
     .toast { pointer-events: auto; padding: 0.7rem 1.15rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transform: translateX(120%); transition: transform 0.3s ease; }
     .toast.show { transform: translateX(0); }
     .toast.hide { animation: toast-out 0.3s ease forwards; }
-    .toast-success { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
-    .toast-info { background: #1e3a5f; color: #93c5fd; border: 1px solid #2563eb; }
-    .toast-error { background: #7c2d12; color: #fca5a5; border: 1px solid #dc2626; }
+    .toast-success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+    .toast-info { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+    .toast-error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
 
     /* === Skeleton loading === */
     .skel { background: var(--bg-hover); border-radius: 4px; animation: skel-pulse 1.5s ease-in-out infinite; }
@@ -178,7 +186,33 @@
     .modal-link:hover { text-decoration: underline; }
 
     /* === Mobile toggle === */
-    .chat-toggle { display: none; position: fixed; bottom: 1.25rem; right: 1.25rem; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--bg); border: none; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 50; align-items: center; justify-content: center; }
+    .chat-toggle { display: none; position: fixed; bottom: 1.25rem; right: 1.25rem; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--bg); border: none; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 50; align-items: center; justify-content: center; }
+
+    /* === Inventory === */
+    .inv-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+    .inv-header h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+    .inv-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .inv-primary-btn { padding: 0.5rem 1rem; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.9rem; font-weight: 600; }
+    .inv-primary-btn:hover { opacity: 0.9; }
+    .inv-row-low { background: rgba(220,38,38,0.06); }
+    .inv-badge-low { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 500; background: rgba(220,38,38,0.15); color: var(--outbound); }
+    .inv-badge-ok { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 500; background: rgba(16,185,129,0.15); color: var(--inbound); }
+    .inv-sell-btn { padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    .inv-sell-btn:hover { opacity: 0.9; }
+    .inv-sell-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .inv-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; display: flex; align-items: center; justify-content: center; }
+    .inv-modal { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; width: 380px; max-width: 90vw; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    .inv-modal h3 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; }
+    .inv-form-group { margin-bottom: 1rem; }
+    .inv-form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-muted); }
+    .inv-form-group select, .inv-form-group input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+    .inv-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+    .inv-secondary-btn { padding: 0.5rem 1rem; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-family: inherit; }
+    .inv-alert-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .inv-alert-box { background: white; border-radius: 12px; padding: 1.5rem; width: 360px; max-width: 90vw; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+    .inv-alert-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .inv-alert-title { margin: 0 0 0.5rem; font-size: 1.15rem; font-weight: 600; color: var(--outbound); }
+    .inv-alert-text { margin: 0 0 1rem; font-size: 1rem; line-height: 1.5; }
 
     /* === Loading / error === */
     .err { color: var(--outbound); padding: 0.75rem; font-size: 0.88rem; }
@@ -227,6 +261,14 @@
 
   <!-- Main dashboard -->
   <main class="main">
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-cashflow">Cash Flow</button>
+      <button class="tab-btn" id="tab-inventory">Inventory</button>
+    </div>
+
+    <!-- Cash Flow panel -->
+    <div class="tab-panel active" id="panel-cashflow">
     <!-- Date range picker -->
     <div class="date-range" id="date-range">
       <button class="range-btn" data-days="7">7D</button>
@@ -337,6 +379,33 @@
         </table>
       </div>
     </div>
+    </div>
+    <!-- end Cash Flow panel -->
+
+    <!-- Inventory panel -->
+    <div class="tab-panel" id="panel-inventory">
+      <div class="inv-header">
+        <h2>Inventory</h2>
+        <button class="inv-primary-btn" id="inv-record-sale">Record Sale</button>
+      </div>
+      <p class="inv-sub">Pickleball clothing and equipment. Low stock (&#x2264;10 items) highlighted.</p>
+      <div class="filter-bar">
+        <select class="filter-select" id="inv-category">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div id="inv-loading" class="loading">Loading inventory&#x2026;</div>
+      <div id="inv-error" class="err" style="display:none;"></div>
+      <div id="inv-wrap" style="display:none;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>SKU</th><th>Quantity</th><th>Status</th><th></th></tr></thead>
+            <tbody id="inv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- end Inventory panel -->
   </main>
 
   <!-- Copilot sidebar -->
@@ -375,6 +444,37 @@
 
 <!-- Toast container -->
 <div class="toast-container" id="toast-container"></div>
+
+<!-- Inventory: Record Sale modal -->
+<div class="inv-modal-overlay" id="inv-sale-modal" style="display:none;">
+  <div class="inv-modal">
+    <h3>Record Sale</h3>
+    <form id="inv-sale-form">
+      <div class="inv-form-group">
+        <label>Product</label>
+        <select id="inv-sale-item" required></select>
+      </div>
+      <div class="inv-form-group">
+        <label>Quantity sold</label>
+        <input type="number" id="inv-sale-qty" min="1" value="1" required />
+      </div>
+      <div class="inv-modal-actions">
+        <button type="button" class="inv-secondary-btn" id="inv-sale-cancel">Cancel</button>
+        <button type="submit" class="inv-primary-btn" id="inv-sale-submit">Record Sale</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Inventory: Low Stock alert popup -->
+<div class="inv-alert-overlay" id="inv-lowstock-alert" style="display:none;">
+  <div class="inv-alert-box">
+    <div class="inv-alert-icon">&#x26A0;</div>
+    <h3 class="inv-alert-title">Low Stock Alert</h3>
+    <p class="inv-alert-text" id="inv-lowstock-message"></p>
+    <button class="inv-primary-btn" id="inv-lowstock-ok">OK</button>
+  </div>
+</div>
 
 <!-- Settings modal -->
 <div class="modal-overlay" id="modal-overlay">
@@ -906,6 +1006,131 @@ regenBtn.addEventListener('click', function() {
       regenBtn.classList.remove('spinning');
     });
 });
+
+// Tab switching
+var tabCashflow = document.getElementById('tab-cashflow');
+var tabInventory = document.getElementById('tab-inventory');
+var panelCashflow = document.getElementById('panel-cashflow');
+var panelInventory = document.getElementById('panel-inventory');
+
+function switchTab(name) {
+  tabCashflow.classList.toggle('active', name === 'cashflow');
+  tabInventory.classList.toggle('active', name === 'inventory');
+  panelCashflow.classList.toggle('active', name === 'cashflow');
+  panelInventory.classList.toggle('active', name === 'inventory');
+  if (name === 'inventory') loadInventory();
+}
+tabCashflow.addEventListener('click', function() { switchTab('cashflow'); });
+tabInventory.addEventListener('click', function() { switchTab('inventory'); });
+
+// Inventory
+var allInventoryItems = [];
+
+function loadInventory() {
+  var cat = document.getElementById('inv-category').value;
+  document.getElementById('inv-loading').style.display = 'block';
+  document.getElementById('inv-wrap').style.display = 'none';
+  document.getElementById('inv-error').style.display = 'none';
+  var url = API + '/inventory' + (cat ? '?category=' + encodeURIComponent(cat) : '');
+  fetch(url)
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.statusText); })
+    .then(function(list) {
+      allInventoryItems = list;
+      document.getElementById('inv-loading').style.display = 'none';
+      document.getElementById('inv-wrap').style.display = 'block';
+      renderInventory(list);
+      updateInvCategoryOptions(list);
+    })
+    .catch(function() {
+      document.getElementById('inv-loading').style.display = 'none';
+      var el = document.getElementById('inv-error');
+      el.style.display = 'block';
+      el.textContent = 'Could not load inventory. Is the backend running on port 8000?';
+    });
+}
+
+function updateInvCategoryOptions(list) {
+  var cats = [...new Set(list.map(function(i) { return i.category; }))];
+  var sel = document.getElementById('inv-category');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">All Categories</option>' + cats.map(function(c) {
+    return '<option value="' + escHtml(c) + '">' + escHtml(c) + '</option>';
+  }).join('');
+  sel.value = cur || '';
+}
+
+function renderInventory(list) {
+  var tbody = document.getElementById('inv-tbody');
+  tbody.innerHTML = '';
+  list.forEach(function(item) {
+    var tr = document.createElement('tr');
+    var low = item.quantity <= item.low_stock_threshold;
+    if (low) tr.className = 'inv-row-low';
+    var statusBadge = low ? '<span class="inv-badge-low">Low stock</span>' : '<span class="inv-badge-ok">OK</span>';
+    var sellBtn = item.quantity === 0
+      ? '<button class="inv-sell-btn" disabled>Sell</button>'
+      : '<button class="inv-sell-btn" data-id="' + escHtml(item.id) + '">Sell</button>';
+    tr.innerHTML = '<td>' + escHtml(item.name) + '</td><td>' + escHtml(item.category) + '</td><td>' + (item.sku ? escHtml(item.sku) : '\u2014') + '</td><td style="font-weight:600;color:' + (low ? 'var(--outbound)' : 'inherit') + ';">' + item.quantity + '</td><td>' + statusBadge + '</td><td>' + sellBtn + '</td>';
+    tbody.appendChild(tr);
+    var btn = tr.querySelector('.inv-sell-btn:not([disabled])');
+    if (btn) btn.addEventListener('click', function() { openInvSaleModal(item.id); });
+  });
+}
+
+function openInvSaleModal(itemId) {
+  var items = allInventoryItems.filter(function(i) { return i.quantity > 0; });
+  var sel = document.getElementById('inv-sale-item');
+  sel.innerHTML = '<option value="">Select item\u2026</option>' + items.map(function(i) {
+    return '<option value="' + i.id + '"' + (i.id === itemId ? ' selected' : '') + '>' + escHtml(i.name) + ' (' + i.quantity + ' in stock)</option>';
+  }).join('');
+  document.getElementById('inv-sale-qty').value = '1';
+  document.getElementById('inv-sale-modal').style.display = 'flex';
+}
+
+function closeInvSaleModal() {
+  document.getElementById('inv-sale-modal').style.display = 'none';
+}
+
+function showInvLowStockAlert(itemName, quantity) {
+  var msg = document.getElementById('inv-lowstock-message');
+  msg.innerHTML = '<strong>' + escHtml(itemName) + '</strong> has only <strong>' + quantity + '</strong> item' + (quantity !== 1 ? 's' : '') + ' left. Consider restocking soon.';
+  document.getElementById('inv-lowstock-alert').style.display = 'flex';
+}
+
+document.getElementById('inv-record-sale').addEventListener('click', function() { openInvSaleModal(null); });
+document.getElementById('inv-sale-cancel').addEventListener('click', closeInvSaleModal);
+document.getElementById('inv-sale-modal').addEventListener('click', function(e) {
+  if (e.target.id === 'inv-sale-modal') closeInvSaleModal();
+});
+document.getElementById('inv-sale-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var itemId = document.getElementById('inv-sale-item').value;
+  var qty = parseInt(document.getElementById('inv-sale-qty').value, 10);
+  if (!itemId || qty < 1) return;
+  document.getElementById('inv-sale-submit').disabled = true;
+  fetch(API + '/inventory/transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item_id: itemId, quantity: qty })
+  })
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.statusText); })
+    .then(function(res) {
+      closeInvSaleModal();
+      var cat = document.getElementById('inv-category').value;
+      loadInventory();
+      if (res.low_stock_alert) showInvLowStockAlert(res.low_stock_alert.item_name, res.low_stock_alert.quantity);
+      else showToast('Recorded sale: ' + res.quantity_sold + ' x ' + res.item_name, 'success');
+    })
+    .catch(function() { showToast('Failed to record sale', 'error'); })
+    .finally(function() { document.getElementById('inv-sale-submit').disabled = false; });
+});
+document.getElementById('inv-lowstock-ok').addEventListener('click', function() {
+  document.getElementById('inv-lowstock-alert').style.display = 'none';
+});
+document.getElementById('inv-lowstock-alert').addEventListener('click', function(e) {
+  if (e.target.id === 'inv-lowstock-alert') document.getElementById('inv-lowstock-alert').style.display = 'none';
+});
+document.getElementById('inv-category').addEventListener('change', loadInventory);
 
 // Clear chat
 document.getElementById('clear-chat').addEventListener('click', clearChat);

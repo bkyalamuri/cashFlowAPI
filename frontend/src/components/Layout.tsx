@@ -8,6 +8,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const nav = [
     { to: '/', label: 'Dashboard' },
     { to: '/payments', label: 'Payments' },
+    { to: '/inventory', label: 'Inventory' },
     { to: '/copilot', label: 'Copilot' },
   ]
 
@@ -108,7 +109,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navLinkActive: {
     color: 'var(--accent)',
-    background: 'rgba(52, 211, 153, 0.08)',
+    background: 'rgba(13, 148, 136, 0.08)',
     borderRight: '3px solid var(--accent)',
   },
   main: {

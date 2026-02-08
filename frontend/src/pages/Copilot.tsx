@@ -127,9 +127,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
   },
   banner: {
-    background: '#7c2d12',
-    color: '#fed7aa',
-    border: '1px solid #9a3412',
+    background: '#fef3c7',
+    color: '#92400e',
+    border: '1px solid #f59e0b',
     borderRadius: 8,
     padding: '0.75rem 1rem',
     marginBottom: '1rem',
